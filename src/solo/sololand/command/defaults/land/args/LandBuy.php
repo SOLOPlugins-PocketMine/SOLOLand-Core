@@ -20,7 +20,7 @@ class LandBuy extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		if($land === null){
 			Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 			return true;
@@ -35,7 +35,7 @@ class LandBuy extends SubCommand{
 		}
 		if(
 			!$sender->hasPermission("sololand.administrate.land.ignoreMaxCount")
-			&& $world->getLandProperties()->getMaxCountPerPlayer() <= count($world->getLandManager()->getLands(function(Land $land) use($sender) { return $land->isOwner($sender); }))
+			&& $world->getLandProperties()->getMaxCountPerPlayer() <= count($world->getLandProvider()->getLands(function(Land $land) use($sender) { return $land->isOwner($sender); }))
 		){
 			Message::alert($sender, "해당 월드에서 소유할 수 있는 땅의 최대 갯수를 초과하였습니다. (최대 " . $world->getLandProperties()->getMaxCountPerPlayer() . "개)");
 			return true;
@@ -58,7 +58,7 @@ class LandBuy extends SubCommand{
 			
 			if($land->hasOwner()){
 				Economy::addMoney($land->getOwner(), $land->getPrice());
-				Notification::addNotification($land->getOwner(), $sender->getName() . "님이 " . $world->getName() . " 월드의 " . $land->getId() . "번 땅을 구매하셨습니다.");
+				@Notification::addNotification($land->getOwner(), $sender->getName() . "님이 " . $world->getName() . " 월드의 " . $land->getId() . "번 땅을 구매하셨습니다.");
 			}
 			$land->clear(true);
 			$land->setOwner($sender);

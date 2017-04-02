@@ -24,7 +24,7 @@ class LandReduce extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 
 		if(!$sender->hasPermission("sololand.administrate.land.ignoreDisallowResize") && !$world->getLandProperties()->isAllowResize()){
 			Message::alert($sender, "해당 월드에서는 땅의 크기를 변경할 수 없습니다.");
@@ -57,7 +57,7 @@ class LandReduce extends SubCommand{
 				return true;
 
 			case 1: // final step
-				$land = $world->getLandManager()->getLandById($queue->get("land")->getId());
+				$land = $world->getLandProvider()->getLandById($queue->get("land")->getId());
 				if($land === null){
 					Message::alert($sender, "땅이 존재하지 않습니다.");
 					Queue::removeQueue($sender);
@@ -102,7 +102,7 @@ class LandReduceListener implements Listener{
 
 		$world = World::getWorld($player);
 		if($queue->getStep() === 0){
-			$land = $world->getLandManager()->getLandById($queue->get("land")->getId());
+			$land = $world->getLandProvider()->getLandById($queue->get("land")->getId());
 			if($land === null){
 				Queue::removeQueue($player);
 				return;

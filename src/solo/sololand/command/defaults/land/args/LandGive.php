@@ -22,7 +22,7 @@ class LandGive extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		if($land === null){
 			Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 			return true;
@@ -67,7 +67,7 @@ class LandGive extends SubCommand{
 			$land->setOwner($targetName);
 			Message::normal($sender, $targetName . "님에게 " . $land->getId() . "번 땅을 양도 처리 하였습니다.");
 			
-			Notification::addNotification($targetName, $sender->getName() . "님이 " . $world->getName() . " 월드의 " . $land->getId() . "번 땅을 양도하셨습니다.");
+			@Notification::addNotification($targetName, $sender->getName() . "님이 " . $world->getName() . " 월드의 " . $land->getId() . "번 땅을 양도하셨습니다.");
 			
 		}else{
 			Message::alert($sender, $queue->getName() . " 작업이 진행중입니다. 해당 작업을 취소한 후 다시 시도해주세요.");

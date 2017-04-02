@@ -23,7 +23,7 @@ class LandSellList extends SubCommand{
 		if(isset($args[0]) && is_numeric($args[0])){
 			$page = (int) $args[0];
 		}
-		foreach($world->getLandManager()->getLands() as $land){
+		foreach($world->getLandProvider()->getLands() as $land){
 			if(!$land->isSail()){
 				continue;
 			}

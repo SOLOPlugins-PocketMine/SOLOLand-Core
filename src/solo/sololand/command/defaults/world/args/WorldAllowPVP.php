@@ -5,6 +5,7 @@ namespace solo\sololand\command\defaults\world\args;
 use pocketmine\command\CommandSender;
 use solo\sololand\command\SubCommand;
 use solo\sololand\world\World;
+use solo\solocore\util\Message;
 
 class WorldAllowPVP extends SubCommand{
 

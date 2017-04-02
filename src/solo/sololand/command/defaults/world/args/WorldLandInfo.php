@@ -34,7 +34,7 @@ class WorldLandInfo extends SubCommand{
 		$sail = 0;
 		$notOwned = 0;
 		$owned = 0;
-		foreach($world->getLandManager()->getLands() as $land){
+		foreach($world->getLandProvider()->getLands() as $land){
 			++$all;
 			if($land->isSail()){
 				++$sail;

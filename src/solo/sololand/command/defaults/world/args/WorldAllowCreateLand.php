@@ -15,8 +15,8 @@ class WorldAllowCreateLand extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$world->getLandProperties()->setAllowCreateLand(!$world->getLandProperties()->isAllowCreateLand());
-		Message::normal($sender, $world->getName() . " 월드의 땅 생성을 " . ($world->getLandProperties()->isAllowCreateLand() ? "허용하였습니다." : "금지하였습니다."));
+		$world->getLandProperties()->setAllowCreate(!$world->getLandProperties()->isAllowCreate());
+		Message::normal($sender, $world->getName() . " 월드의 땅 생성을 " . ($world->getLandProperties()->isAllowCreate() ? "허용하였습니다." : "금지하였습니다."));
 		return true;
 	}
 }

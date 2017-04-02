@@ -13,6 +13,7 @@ class WorldLoad extends SubCommand{
 		parent::__construct("로드", "월드를 로드합니다.", ["불러오기"], [
 				["월드 이름"]
 		]);
+		$this->setInGameOnly(false);
 		$this->setPermission("sololand.command.world.load");
 	}
 

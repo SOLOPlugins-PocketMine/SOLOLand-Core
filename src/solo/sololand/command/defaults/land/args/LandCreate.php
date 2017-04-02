@@ -56,7 +56,7 @@ class LandCreate extends SubCommand{
 	
 				case 2:
 					$square = $queue->get("square");
-					$overlapList = $world->getLandManager()->getLands(function(Land $land) use ($square){ return $square->isOverlap($land); });
+					$overlapList = $world->getLandProvider()->getLands(function(Land $land) use ($square){ return $square->isOverlap($land); });
 					if(count($overlapList) > 0){
 						$ids = [];
 						foreach($overlapList as $overlap){
@@ -76,13 +76,13 @@ class LandCreate extends SubCommand{
 						}
 						Economy::reduceMoney($sender, $price);
 					}
-					$land = new Land($world->getLandManager()->getNextLandId(), $square);
+					$land = new Land($world->getLandProvider()->getNextLandId(), $square);
 					$land->setOwner($sender); // set owner;
 					$centerX = $land->getStartX() + ($land->getWidth() / 2);
 					$centerZ = $land->getStartZ() + ($land->getDepth() / 2);
 					$land->setSpawnPoint(new Vector3($centerX, $world->getLevel()->getHighestBlockAt($centerX, $centerZ) + 1, $centerZ)); // set spawnpoint
 					
-					$world->getLandManager()->addLand($land);
+					$world->getLandProvider()->addLand($land);
 					Message::normal($sender, "성공적으로 땅을 생성하였습니다. 땅 번호는 " . $land->getId() . "번 입니다.");
 					Queue::removeQueue($sender);
 					break;
@@ -123,7 +123,7 @@ class LandCreateListener implements Listener{
 				$square = Square::create($queue->get("position"), $event->getBlock());
 				Message::normal($player, "두번째 지점을 선택하였습니다.");
 				
-				$overlapList = $world->getLandManager()->getLands(function(Land $land) use ($square){ return $square->isOverlap($land); });
+				$overlapList = $world->getLandProvider()->getLands(function(Land $land) use ($square){ return $square->isOverlap($land); });
 				if(count($overlapList) > 0){
 					$ids = [];
 					foreach($overlapList as $overlap){

@@ -33,18 +33,12 @@ class WorldCreate extends SubCommand{
 			return true;
 		}
 
-		$generatorClass = Generator::getGenerator($generator);
 		//foreach(Generator::getGeneratorList() as $gen){
 		//	if(strcasecmp($gen, $generator)){
 		//		$generatorClass = Generator::getGenerator($gen);
 		//		break;
 		//	}
 		//}
-		if($generatorClass === null){
-			return false;
-		}
-
-		@mkdir($server->getDataPath() . "worlds/" . $worldName . "/");
 
 		$options = [];
 		if(isset($args[2])){
@@ -53,17 +47,13 @@ class WorldCreate extends SubCommand{
 			$options["preset"] = implode(" ", $args);
 		}
 		
-		//seed is currentTimeMillis
-		$isCreated = $server->generateLevel($worldName, time(), $generatorClass, $options);
+		$isCreated = World::createWorld($worldName, $generator, $options);
+		
 		if(!$isCreated){
-			if(!$server->loadLevel($worldName)){
-				Message::alert($sender, "알 수 없는 오류로 월드 생성에 실패하였습니다.");
-				return true;
-			}
-			Message::normal($sender, "성공적으로 " . $worldName . " 월드를 로드하였습니다.");
-			return true;
+			Message::alert($sender, "월드 생성에 실패하였습니다. 이미 생성된 월드인지 확인해주세요.");
+		}else{
+			Message::normal($sender, "성공적으로 " . $worldName . " 월드를 생성하였습니다.");
 		}
-		Message::normal($sender, "성공적으로 " . $worldName . " 월드를 생성하였습니다.");
 		return true;
 	}
 }

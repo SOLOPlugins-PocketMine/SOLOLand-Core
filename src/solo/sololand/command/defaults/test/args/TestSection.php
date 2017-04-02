@@ -16,7 +16,7 @@ class TestSection extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$section = $world->getLandManager()->getSection($sender);
+		$section = $world->getLandProvider()->getSection($sender);
 		
 		$information = [];
 		$information[] = "섹션의 크기 : " . $section->getWidth() . "x" . $section->getDepth();

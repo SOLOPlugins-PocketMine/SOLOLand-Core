@@ -22,7 +22,7 @@ class LandMove extends SubCommand{
 		}
 		$id = (int) $args[0];
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLandById($id);
+		$land = $world->getLandProvider()->getLandById($id);
 		if($land === null){
 			Message::alert($sender, $id . "번 땅은 존재하지 않습니다.");
 			return true;

@@ -65,5 +65,4 @@ class LandCommand extends MainCommand{
 		$this->registerSubCommand(new LandVisitor());
 		$this->registerSubCommand(new LandCancel());
 	}
-
 }

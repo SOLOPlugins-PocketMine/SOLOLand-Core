@@ -17,7 +17,7 @@ class LandAllowPVP extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		if($land === null){
 			Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 			return true;

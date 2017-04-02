@@ -29,7 +29,7 @@ class LandCombine extends SubCommand{
 		}
 		
 		$queue = Queue::getQueue($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		$squareCombined;
 		
 		if($queue !== null && !$queue instanceof LandCombineQueue){
@@ -37,7 +37,7 @@ class LandCombine extends SubCommand{
 			return true;
 				
 		}else if($queue === null){ // first execute this command
-			$land = $world->getLandManager()->getLand($sender);
+			$land = $world->getLandProvider()->getLand($sender);
 			if($land === null){
 				Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 				return true;
@@ -50,7 +50,7 @@ class LandCombine extends SubCommand{
 				return false;
 			}
 			$id = (int) $args[0];
-			$targetLand = $world->getLandManager()->getLandById($id);
+			$targetLand = $world->getLandProvider()->getLandById($id);
 			if($targetLand === null){
 				Message::alert($sender, "해당 번호의 땅은 존재하지 않습니다.");
 				return true;
@@ -80,7 +80,7 @@ class LandCombine extends SubCommand{
 						return true;
 			}
 		}else{
-			$land = $world->getLandManager()->getLandById($queue->get("land")->getId());
+			$land = $world->getLandProvider()->getLandById($queue->get("land")->getId());
 			$squareCombined = $queue->get("square");
 			if(!$sender->hasPermission("sololand.administrate.land.modify") && !$land->isOwner($sender)){
 				Message::alert($sender, "땅 주인이 아니므로 땅을 합칠 수 없습니다.");
@@ -183,7 +183,7 @@ class LandCombine extends SubCommand{
 		
 		// remove overlap lands
 		foreach($overlapList as $overlap){
-			$world->getLandManager()->removeLand($overlap->getId());
+			$world->getLandProvider()->removeLand($overlap->getId());
 		}
 		
 		$beforeSize = $land->getSize();

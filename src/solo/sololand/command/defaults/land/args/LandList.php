@@ -34,7 +34,7 @@ class LandList extends SubCommand{
 		}
 		$information = [];
 		foreach(World::getWorlds() as $world){
-			foreach($world->getLandManager()->getLands(function (Land $land) use ($sender) { return $land->isOwner($sender); } ) as $land){
+			foreach($world->getLandProvider()->getLands(function (Land $land) use ($sender) { return $land->isOwner($sender); } ) as $land){
 				$line = "§l§a[" . $world->getName() . " 월드] " . $land->getId() . "번땅 §r§7(" . $land->getWidth() . "x" . $land->getDepth() . ")";
 				if($land->getWelcomeMessage() !== ""){
 					$line .= " - " . $land->getWelcomeMessage();

@@ -21,7 +21,7 @@ class LandShare extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		if($land === null){
 			Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 			return true;
@@ -50,7 +50,7 @@ class LandShare extends SubCommand{
 			$land->addMember($target);
 			Message::normal($sender, $target->getName() . "님에게 땅을 공유하였습니다.");
 			
-			Notification::addNotification($target, $sender->getName() . "님이 " . $world->getName() . " 월드의 " . $land->getId() . "번 땅을 공유하셨습니다.");
+			@Notification::addNotification($target, $sender->getName() . "님이 " . $world->getName() . " 월드의 " . $land->getId() . "번 땅을 공유하셨습니다.");
 		}
 		return true;
 	}

@@ -17,7 +17,7 @@ class LandRemove extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		
 		if($land === null){
 			Message::normal($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
@@ -37,7 +37,7 @@ class LandRemove extends SubCommand{
 			Message::normal($sender, "정말로 땅을 삭제하시겠습니까? 삭제하려면 /땅 삭제 명령어를 한번 더 입력해주세요.");
 			
 		}else if($queue instanceof LandRemoveQueue){
-			if($land->getId() === $queue->get("id") && $world->getLandManager()->removeLand($land->getId())){
+			if($land->getId() === $queue->get("id") && $world->getLandProvider()->removeLand($land->getId())){
 				Message::normal($sender, "성공적으로 " . $land->getId() . "번 땅을 삭제하였습니다.");
 			}else{
 				Message::alert($sender, "땅 삭제를 진행하던 중 오류가 발생하였습니다. 잠시후 다시 시도해주세요.");

@@ -59,14 +59,14 @@ class TestLand extends SubCommand{
 		$count = 0;
 		for($x = 1; $x < 100; $x++){
 			for($z = 1; $z < 100; $z++){
-				$land = new Land($world->getLandManager()->getNextLandId());
+				$land = new Land($world->getLandProvider()->getNextLandId());
 				$land->startX = $x * 6 - 5;
 				$land->startZ = $z * 6 - 5;
 				$land->endX = $x * 6;
 				$land->endZ = $z * 6;
 				$land->setOwner($players[mt_rand(0, $playersEndIndex)]);
 				$land->setSpawnPoint(new Vector3($x + 3, 128, $z + 3));
-				$world->getLandManager()->addLand($land);
+				$world->getLandProvider()->addLand($land);
 				
 				++$count;
 				if($count % 500 == 0){

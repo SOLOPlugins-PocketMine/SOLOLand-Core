@@ -24,13 +24,13 @@ class LandInfo extends SubCommand{
 		$land = null;
 		
 		if(isset($args[0]) && is_numeric($args[0])){
-			$land = $world->getLandManager()->getLandById((int) $args[0]);
+			$land = $world->getLandProvider()->getLandById((int) $args[0]);
 			if($land === null){
 				Message::alert($sender, $args[0] . "번 땅은 존재하지 않습니다.");
 				return true;
 			}
 		}else{
-			$land = $world->getLandManager()->getLand($sender);
+			$land = $world->getLandProvider()->getLand($sender);
 			if($land === null){
 				Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 				return true;

@@ -31,7 +31,7 @@ class LandExpand extends SubCommand{
 			return true;
 		}
 		
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		
 		$queue = Queue::getQueue($sender);
 		if($queue !== null && !$queue instanceof LandExpandQueue){
@@ -59,7 +59,7 @@ class LandExpand extends SubCommand{
 				return true;
 				
 			case 1:
-				$land = $world->getLandManager()->getLandById($queue->get("land")->getId());
+				$land = $world->getLandProvider()->getLandById($queue->get("land")->getId());
 				if($land === null){
 					Message::alert($sender, "땅이 존재하지 않습니다.");
 					Queue::removeQueue($sender);
@@ -71,7 +71,7 @@ class LandExpand extends SubCommand{
 					return true;
 				}
 				$square = $queue->get("square");
-				$overlapList = $world->getLandManager()->getLands(function (Land $check) use ($square) { return $square->isOverlap($check); } );
+				$overlapList = $world->getLandProvider()->getLands(function (Land $check) use ($square) { return $square->isOverlap($check); } );
 				unset($overlapList[$land->getId()]);
 				if(count($overlapList) > 0){
 					$ids = [];
@@ -120,7 +120,7 @@ class LandExpandListener implements Listener{
 		$world = World::getWorld($player);
 		if($queue->getStep() === 0){
 			$id = $queue->get("id");
-			$land = $world->getLandManager()->getLandById($id);
+			$land = $world->getLandProvider()->getLandById($id);
 			if($land === null){
 				Queue::removeQueue($player);
 				return;
@@ -133,7 +133,7 @@ class LandExpandListener implements Listener{
 			$squareExpanded->set($land);
 			$squareExpanded->expand($event->getBlock());
 				
-			$overlapList = $world->getLandManager()->getLands(function(Land $land) use ($squareExpanded){ return $squareExpanded->isOverlap($land); });
+			$overlapList = $world->getLandProvider()->getLands(function(Land $land) use ($squareExpanded){ return $squareExpanded->isOverlap($land); });
 			if(count($overlapList) > 0){
 				$ids = [];
 				foreach($overlapList as $overlap){

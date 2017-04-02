@@ -22,7 +22,7 @@ class LandCancelShare extends SubCommand{
 
 	public function execute(CommandSender $sender, array $args){
 		$world = World::getWorld($sender);
-		$land = $world->getLandManager()->getLand($sender);
+		$land = $world->getLandProvider()->getLand($sender);
 		if($land === null){
 			Message::alert($sender, "현재 위치에서 땅을 찾을 수 없습니다.");
 			return true;
@@ -49,7 +49,7 @@ class LandCancelShare extends SubCommand{
 			$land->removeMember($targetName);
 			Message::normal($sender, $targetName . "님을 공유 취소 하였습니다.");
 			
-			Notification::addNotification($targetName, $world->getName() . " 월드의 " . $land->getId() . "번 땅 공유가 취소되었습니다.");
+			@Notification::addNotification($targetName, $world->getName() . " 월드의 " . $land->getId() . "번 땅 공유가 취소되었습니다.");
 		}
 		return true;
 	}
