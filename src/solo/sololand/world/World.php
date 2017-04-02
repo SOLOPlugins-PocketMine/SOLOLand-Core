@@ -5,54 +5,93 @@ namespace solo\sololand\world;
 use pocketmine\Server;
 use pocketmine\level\Level;
 use pocketmine\level\Position;
+use pocketmine\level\generator\Generator;
+use pocketmine\utils\Config;
+use solo\sololand\Main;
 use solo\sololand\event\world\WorldCreationEvent;
 use solo\sololand\event\world\WorldInitEvent;
+use solo\solocore\util\Debug;
 
 class World{
-
+	
 	public static $classes = [];
 	public static $worlds = [];
 	
-	public static function registerWorld($generator, $worldClass, $worldProviderClass = null, $landProviderClass = null, $landManagerClass = null){
-		self::$classes[$generator] = [];
-		self::$classes[$generator]["world"] = $worldClass;
-		if($worldProviderClass !== null){
-			self::$classes[$generator]["worldProvider"] = $worldProviderClass;
-		}
+	public static function registerWorldClass($generatorName, $worldClass, $landProviderClass = null){
+		self::$classes[$generatorName] = [
+				"worldClass" => $worldClass
+		];
 		if($landProviderClass !== null){
-			self::$classes[$generator]["landProvider"] = $landProviderClass;
-		}
-		if($landManagerClass !== null){
-			self::$classes[$generator]["landManager"] = $landManagerClass;
+			self::$classes[$generatorName]["landProviderClass"] = $landProviderClass;
 		}
 	}
 	
-	public static function loadWorld(Level $level) : bool{
+	public static function createWorld($worldName, $generator, $options) : bool{
+		if(self::loadWorld($worldName)){
+			return false;
+		}
+		$worldClass = self::$classes[$generator]["worldClass"] ?? World::class;
+		$landProviderClass = self::$classes[$generator]["landProviderClass"] ?? LandProvider::class;
+		
+		$levelPath = Server::getInstance()->getDataPath() . "worlds/" . $worldName . "/";
+		@mkdir($levelPath);
+		
+		$config = new Config($levelPath . "properties.yml", Config::YAML, [
+				"class" => [
+						"worldClass" => $worldClass,
+						"landProviderClass" => $landProviderClass
+				]
+		]);
+		$config->save();
+		
+		return Server::getInstance()->generateLevel($worldName, null, Generator::getGenerator($generator), $options);
+	}
+	
+	public static function loadWorld($level) : bool{
+		$server = Server::getInstance();
+		if(!$level instanceof Level){
+			$success = $server->loadLevel($level);
+			if(!$success){
+				return false;
+			}
+			$level = $server->getLevelByName($level);
+		}
+		if($level === null){
+			return false;
+		}
 		if(isset(self::$worlds[$level->getFolderName()])){
 			return false;
 		}
-		$generator = $level->getProvider()->getGenerator();
-		$ev = new WorldCreationEvent(
-				$level,
-				self::$classes[$generator]["world"] ?? World::class,
-				self::$classes[$generator]["worldProvider"] ?? WorldProvider::class,
-				self::$classes[$generator]["landProvider"] ?? LandProvider::class,
-				self::$classes[$generator]["landManager"] ?? LandManager::class
-				);
-		Server::getInstance()->getPluginManager()->callEvent($ev);
-		if($ev->isCancelled()){
-			return false;
+		$worldProperties = new WorldProperties($level);
+		
+		//$generator = $level->getProvider()->getGenerator();
+		//$ev = new WorldCreationEvent(
+		//		$level,
+		//		self::$classes[$generator]["world"] ?? World::class,
+		//		self::$classes[$generator]["worldProvider"] ?? WorldProvider::class,
+		//		self::$classes[$generator]["landProvider"] ?? LandProvider::class,
+		//		self::$classes[$generator]["landManager"] ?? LandManager::class
+		//		);
+		//Server::getInstance()->getPluginManager()->callEvent($ev);
+		//if($ev->isCancelled()){
+		//	return false;
+		//}
+		
+		//$worldClass = $ev->getWorldClass();
+		//$worldProviderClass = $ev->getWorldProviderClass();
+		//$landProviderClass = $ev->getLandProviderClass();
+		//$landManagerClass = $ev->getLandManagerClass();
+		
+		$worldClass = $worldProperties->getClassProperties()->getWorldClass();
+		if(!class_exists($worldClass)){
+			Debug::critical(Main::getInstance(), $level->getFolderName() . " 월드를 로드하던 중 에러가 발생하였습니다 : " . $worldClass . " 클래스가 존재하지 않습니다.");
+			$worldClass = World::class;
 		}
 		
-		$worldClass = $ev->getWorldClass();
-		$worldProviderClass = $ev->getWorldProviderClass();
-		$landProviderClass = $ev->getLandProviderClass();
-		$landManagerClass = $ev->getLandManagerClass();
-		
-		$world = new $worldClass($ev->getLevel(), $worldProviderClass, $landProviderClass, $landManagerClass);
+		$world = new $worldClass($worldProperties);
 		
 		$ev = new WorldInitEvent($world);
-		Server::getInstance()->getPluginManager()->callEvent($ev);
+		$server->getPluginManager()->callEvent($ev);
 		if($ev->isCancelled()){
 			return false;
 		}
@@ -100,47 +139,29 @@ class World{
 	
 	
 	//instance
-	public $level;
 	private $name;
-	
-	private $provider;
-	public $properties;
+	private $properties;
 
 	//lands
-	private $landManager;
 	private $landProvider;
-	
-	//temporary
-	public $lastRemember = 1;
 
-	public function __construct(Level $level, $worldProviderClass, $landProviderClass, $landManagerClass){
+	public function __construct(WorldProperties $properties){
+		$this->properties = $properties;
 		$server = Server::getInstance();
 		
-		$this->level = $level;
-		$this->name = $level->getFolderName();
+		$this->name = $this->properties->getLevel()->getFolderName();
 		
-		if(!is_a($worldProviderClass, IProvider::class, true)){
-			throw new \RuntimeException("worldProviderClass must extend IProvider class");
+		$this->levelPath = $server->getDataPath() . "worlds/" . $properties->getLevel()->getFolderName() . "/";
+		$this->landPath = $this->levelPath . "lands/";
+		@mkdir($this->levelPath);
+		@mkdir($this->landPath);
+		
+		$landProviderClass = $this->properties->getClassProperties()->getLandProviderClass();
+		if(!class_exists($landProviderClass)){
+			Debug::critical(Main::getInstance(), $this->properties->getLevel()->getFolderName() . " 월드를 로드하던 중 에러가 발생하였습니다 : " . $landProviderClass . " 클래스가 존재하지 않습니다.");
+			$landProviderClass = LandProvider::class;
 		}
-		
-		if(!is_a($landProviderClass, IProvider::class, true)){
-			throw new \RuntimeException("landProviderClass must extend IProvider class");
-		}
-
-		if(!is_a($landManagerClass, ILandManager::class, true)){
-			throw new \RuntimeException("landManagerClass must extend ILandManager class");
-		}
-		
-		$providerPath = $server->getDataPath() . "worlds/" . $level->getFolderName() . "/";
-		$landProviderPath = $server->getDataPath() . "worlds/" . $level->getFolderName() . "/lands/";
-		@mkdir($providerPath);
-		@mkdir($landProviderPath);
-		
-		$this->provider = new $worldProviderClass($providerPath);
-		$this->landProvider = new $landProviderClass($landProviderPath);
-		
-		$this->properties = $this->provider->load();
-		$this->landManager = new $landManagerClass($this->landProvider->load());
+		$this->landProvider = new $landProviderClass($this);
 	}
 	
 	
@@ -152,7 +173,7 @@ class World{
 	}
 
 	public function getLevel() : Level{
-		return $this->level;
+		return $this->properties->getLevel();
 	}
 
 	
@@ -162,188 +183,28 @@ class World{
 	}
 	
 	public function getWorldProperties(){
-		return new class($this){
-			public $world;
-			
-			public function __construct(World $world){
-				$this->world = $world;
-			}
-			
-			public function isProtected() : bool{
-				return $this->world->properties["world"]["protect"];
-			}
-			
-			public function setProtection(bool $bool){
-				$this->world->properties["world"]["protect"] = $bool;
-			}
-			
-			public function isInvensave() : bool{
-				return $this->world->properties["world"]["invensave"];
-			}
-			
-			public function setInvensave(bool $bool){
-				$this->world->properties["world"]["invensave"] = $bool;
-			}
-			
-			public function isAllowExplosion() : bool{
-				return $this->world->properties["world"]["explosion"];
-			}
-			
-			public function setAllowExplostion(bool $bool){
-				$this->world->properties["world"]["explosion"] = $bool;
-			}
-			
-			public function isAllowPVP() : bool{
-				return $this->world->properties["world"]["pvp"];
-			}
-			
-			public function setAllowPVP(bool $bool){
-				$this->world->properties["world"]["pvp"] = $bool;
-			}
-		};
+		return $this->properties->getWorldProperties();
 	}
 	
 	public function getLandProperties(){
-		return new class($this){
-			public $world;
-				
-			public function __construct(World $world){
-				$this->world = $world;
-			}
-				
-			public function isAllowCreate() : bool{
-				return $this->world->properties["land"]["allowCreate"];
-			}
-				
-			public function setAllowCreate(bool $bool){
-				$this->world->properties["land"]["allowCreate"] = $bool;
-			}
-			
-			public function isAllowCombine() : bool{
-				return $this->world->properties["land"]["allowCombine"];
-			}
-			
-			public function setAllowCombine(bool $bool){
-				$this->world->properties["land"]["allowCombine"] = $bool;
-			}
-			
-			public function isAllowResize() : bool{
-				return $this->world->properties["land"]["allowResize"];
-			}
-			
-			public function setAllowResize(bool $bool){
-				$this->world->properties["land"]["allowResize"] = $bool;
-			}
-			
-			public function getDefaultPrice(){
-				return $this->world->properties["land"]["defaultPrice"];
-			}
-			
-			public function setDefaultPrice($price){
-				$this->world->properties["land"]["defaultPrice"] = $price;
-			}
-			
-			public function getPricePerBlock(){
-				return $this->world->properties["land"]["pricePerBlock"];	
-			}
-			
-			public function setPricePerBlock($price){
-				$this->world->properties["land"]["pricePerBlock"] = $price;
-			}
-			
-			public function getMaxCountPerPlayer() : int{
-				return $this->world->properties["land"]["maxCountPerPlayer"];
-			}
-			
-			public function setMaxCountPerPlayer(int $count){
-				$this->world->properties["land"]["maxCountPerPlayer"] = $count;
-			}
-			
-			public function getMinLength() : int{
-				return $this->world->properties["land"]["minLength"];
-			}
-			
-			public function setMinLength(int $length){
-				$this->world->properties["land"]["minLength"] = $length;
-			}
-			
-			public function getMaxLength() : int{
-				return $this->world->properties["land"]["maxLength"];
-			}
-			
-			public function setMaxLength(int $length){
-				$this->world->properties["land"]["maxLength"] = $length;
-			}
-		};
+		return $this->properties->getLandProperties();
 	}
 	
-
 	public function getRoomProperties(){
-		return new class($this){
-			public $world;
-	
-			public function __construct(World $world){
-				$this->world = $world;
-			}
-	
-			public function isAllowCreate() : bool{
-				return $this->world->properties["room"]["allowCreate"];
-			}
-	
-			public function setAllowCreate(bool $bool){
-				$this->world->properties["room"]["allowCreate"] = $bool;
-			}
-				
-			public function getDefaultPrice(){
-				return $this->world->properties["room"]["defaultPrice"];
-			}
-				
-			public function setDefaultPrice($price){
-				$this->world->properties["room"]["defaultPrice"] = $price;
-			}
-				
-			public function getPricePerBlock(){
-				return $this->world->properties["room"]["pricePerBlock"];
-			}
-				
-			public function setPricePerBlock($price){
-				$this->world->properties["room"]["pricePerBlock"] = $price;
-			}
-				
-			public function getMaxCountPerLand() : int{
-				return $this->world->properties["room"]["maxCountPerLand"];
-			}
-				
-			public function setMaxCountPerLand(int $count){
-				$this->world->properties["room"]["maxCountPerLand"] = $count;
-			}
-				
-			public function getMinLength() : int{
-				return $this->world->properties["room"]["minLength"];
-			}
-				
-			public function setMinLength(int $length){
-				$this->world->properties["room"]["minLength"] = $length;
-			}
-				
-			public function getMaxLength() : int{
-				return $this->world->properties["room"]["maxLength"];
-			}
-				
-			public function setMaxLength(int $length){
-				$this->world->properties["room"]["maxLength"] = $length;
-			}
-		};
+		return $this->properties->getRoomProperties();
 	}
 	
 	
 
-	public function getLandManager() : ILandManager{
-		return $this->landManager;
+	public function getLandProvider() : ILandProvider{
+		return $this->landProvider;
 	}
 	
 	public function save(){
-		$this->provider->save($this->properties);
-		$this->landProvider->save($this->landManager->getLands());
+		$this->properties->getClassProperties()->setWorldClass(get_class($this));
+		$this->properties->getClassProperties()->setLandProviderClass(get_class($this->landProvider));
+		
+		$this->properties->save();
+		$this->landProvider->save();
 	}
 }

@@ -20,22 +20,22 @@ class Section extends Square{
 	
 	
 
-	public $manager;
+	public $provider;
 	public $lands = [];
 	
-	public function __construct(int $sectionX, int $sectionZ, LandManager $manager){
+	public function __construct(int $sectionX, int $sectionZ, LandProvider $provider){
 		$this->startX = $sectionX * self::WIDTH;
 		$this->startZ = $sectionZ * self::DEPTH;
 		$this->endX = $sectionX * self::WIDTH + self::WIDTH - 1;
 		$this->endZ = $sectionZ * self::DEPTH + self::DEPTH - 1;
 		
-		$this->manager = $manager;
+		$this->provider = $provider;
 		$section = $this;
 		$condition = function($land) use ($section){
 			return $section->isOverlap($land);
 		};
 		
-		foreach($manager->getLands($condition) as $land){
+		foreach($provider->getLands($condition) as $land){
 			$this->addLand($land->getId());
 		}
 	}
@@ -46,7 +46,7 @@ class Section extends Square{
 	
 	public function getLand(Vector3 $vec){
 		foreach($this->lands as $id => $fake){
-			$land = $this->manager->getLandById($id);
+			$land = $this->provider->getLandById($id);
 			if($land->isInside($vec)){
 				return $land;
 			}

@@ -2,26 +2,28 @@
 
 namespace solo\sololand\world;
 
-use pocketmine\utils\Config;
 use pocketmine\math\Vector3;
+use pocketmine\utils\Config;
+use solo\sololand\Main;
 use solo\sololand\land\Land;
+use solo\solocore\util\Debug;
 
-class LandProvider implements IProvider{
+class LandProvider implements ILandProvider{
+
+	public $world;
 	
-	const CHUNK_SIZE = 500;
+	public $lands = [];
+	public $sections = [];
 	
-	public $path;
+	public $lastRemember = 1;
 	
-	public function __construct(string $path){
-		$this->path = $path;
-	}
-	
-	public function load($condition = null) : array{
-		$lands = [];
+	public function __construct(World $world){
+		$this->world = $world;
 		
+		// load all lands
 		$files = [];
-		$handle = opendir($this->path);
-		while($file = readdir($handle)){
+		$handle = opendir($this->world->getProperties()->getLandPath());
+		while($file = readdir($handle)){ // read all files
 			if($file != "." && $file != ".." && is_dir($file) != "1"){
 				$files[] = $file;
 			}
@@ -29,123 +31,109 @@ class LandProvider implements IProvider{
 		closedir($handle);
 		
 		foreach($files as $file){
-			$config = new Config($this->path . $file, Config::YAML);
+			$config = new Config($world->getProperties()->getLandPath() . $file, Config::YAML);
 			foreach($config->getAll() as $id => $landData){
-				$lands[$id] = $this->deserializeLand($id, $landData);
+				$landClass = Land::class;
+				if(isset($landData["class"])){
+					$landClass = $landData["class"];
+					if(!class_exists($landClass)){
+						$landClass = Land::class;
+					}
+				}
+				$land = new $landClass($id);
+				$this->lands[$id] = $land->unserialize($landData);
 			}
 		}
-		return $lands;
 	}
 	
-	public function save(array $lands, $condition = null){
-		$serialize = [];
-		foreach($lands as $land){
-			$fileIndex = (int) $land->getId() / self::CHUNK_SIZE;
-			if(!isset($serialize[$fileIndex])){
-				$serialize[$fileIndex] = [];
-			}
-			$serialize[$fileIndex][$land->getid()] = $this->serializeLand($land);
-		}
+	public function getSection(Vector3 $vec) : Section{
+		$sectionX = Section::getSectionX($vec->getFloorX());
+		$sectionZ = Section::getSectionZ($vec->getFloorZ());
+		$sectionHash = $sectionX . ":" . $sectionZ;
 		
-		foreach($serialize as $key => $chunk){
-			$config = new Config($this->path . "lands." . $key . ".yml", Config::YAML);
-			$config->setAll($chunk);
-			$config->save();
+		if(!isset($this->sections[$sectionHash])){
+			$this->sections[$sectionHash] = new Section($sectionX, $sectionZ, $this);
+			Debug::normal(Main::getInstance(), "Section (" . $sectionX . ":" . $sectionZ . ") 생성됨");
 		}
+		return $this->sections[$sectionHash];
 	}
 	
-	protected function deserializeLand(int $id, array $landData) : Land{
-		$land = new Land($id);
-		$land->owner = $landData["owner"] ?? "";
-		$land->members = $landData["members"] ?? [];
-		$land->startX = $landData["startX"];
-		$land->startZ = $landData["startZ"];
-		$land->endX = $landData["endX"];
-		$land->endZ = $landData["endZ"];
-		$land->price = $landData["price"] ?? -1;
-		$v = explode(":", $landData["spawnPoint"]);
-		$land->spawnPoint = new Vector3($v[0], $v[1], $v[2]);
-		$land->allowPVP = $landData["pvp"] ?? false;
-		$land->allowAccess = $landData["access"] ?? true;
-		$land->allowPickupItem = $landData["pickupItem"] ?? false;
-		$land->welcomeMessage = $landData["welcomeMessage"] ?? "";
-		$land->welcomeParticle = $landData["welcomeParticle"] ?? 0;
-		foreach($landData["rooms"] ?? [] as $roomId => $roomData){
-			$room = new Room($roomId);
-			$room->members = $roomData["members"] ?? [];
-			$room->startX = $roomData["startX"];
-			$room->startY = $roomData["startY"];
-			$room->startZ = $roomData["startZ"];
-			$room->endX = $roomData["endX"];
-			$room->endY = $roomData["endY"];
-			$room->endZ = $roomData["endZ"];
-			$room->price = $roomData["price"] ?? -1;
-			$vv = explode(":", $roomData["spawnPoint"]);
-			$room->spawnPoint = new Vector3($vv[0], $vv[1], $vv[2]);
-			$room->welcomeMessage = $roomData["welcomeMessage"] ?? "";
-				
-			$land->rooms[$roomId] = $room;
+	public function getNextLandId() : int{
+		if(!isset($this->lands[$this->lastRemember])){
+			return $this->lastRemember;
+		}else if(!isset($this->lands[++$this->lastRemember])){
+			return $this->lastRemember;
+		}
+		$id = 0;
+		while(isset($this->lands[++$id])){
+			// :)
+		}
+		$this->lastRemember = $id;
+		return $id;
+	}
+	
+	public function addLand(Land $land) : Land{
+		if(isset($this->lands[$land->getId()])){
+			$this->removeLand($land->getId());
+		}
+		$this->lands[$land->getId()] = $land;
+		foreach($this->sections as $section){
+			if($section->isOverlap($land)){
+				$section->addLand($land->getId());
+			}
 		}
 		return $land;
 	}
 	
-	protected function serializeLand(Land $land) : array{
-		$landData = [];
-		if($land->owner !== ""){
-			$landData["owner"] = $land->owner;
-		}
-		if(!empty($land->members)){
-			$landData["members"] = $land->members;
-		}
-		$landData["startX"] = $land->startX;
-		$landData["startZ"] = $land->startZ;
-		$landData["endX"] = $land->endX;
-		$landData["endZ"] = $land->endZ;
-		if($land->price !== -1){
-			$landData["price"] = $land->price;
-		}
-		$landData["spawnPoint"] = $land->spawnPoint->x . ":" . $land->spawnPoint->y . ":" . $land->spawnPoint->z;
-		if($land->allowPVP){ // default value : false
-			$landData["pvp"] = $land->allowPVP;
-		}
-		if(!$land->allowAccess){ // default value : true
-			$landData["access"] = $land->allowAccess;
-		}
-		if($land->allowPickupItem){ // default value : false
-			$landData["pickupItem"] = $land->allowPickupItem;
-		}
-		if($land->welcomeMessage !== ""){
-			$landData["welcomeMessage"] = $land->welcomeMessage;
-		}
-		if($land->welcomeParticle !== 0){
-			$landData["welcomeParticle"] = $land->welcomeParticle;
-		}
-		if(!empty($land->rooms)){
-			$landData["rooms"] = [];
-			foreach($land->getRooms() as $room){
-				if($room->owner !== ""){
-					$roomData["owner"] = $room->owner;
-				}
-				if(!empty($room->members)){
-					$roomData["members"] = $room->members;
-				}
-				$roomData["startX"] = $room->startX;
-				$roomData["startY"] = $room->startY;
-				$roomData["startZ"] = $room->startZ;
-				$roomData["endX"] = $room->endX;
-				$roomData["endY"] = $room->endY;
-				$roomData["endZ"] = $room->endZ;
-				if($room->price !== -1){
-					$roomData["price"] = $room->price;
-				}
-				$roomData["spawnPoint"] = $room->spawnPoint->x . ":" . $room->spawnPoint->y . ":" . $room->spawnPoint->z;
-				if($room->welcomeMessage !== ""){
-					$roomData["welcomeMessage"] = $room->welcomeMessage;
-				}
-				
-				$landData["rooms"][$room->getId()] = $roomData;
+	public function removeLand(int $id) : bool{
+		if(isset($this->lands[$id])){
+			unset($this->lands[$id]);
+			foreach($this->sections as $section){
+				$section->removeLand($id);
 			}
+			return true;
 		}
-		return $landData;
+		return false;
+	}
+	
+	public function getLandById(int $id){
+		return $this->lands[$id] ?? null;
+	}
+	
+	public function getLand(Vector3 $vec){
+		return $this->getSection($vec)->getLand($vec);
+	}
+	
+	public function getLands($condition = null) : array{
+		if($condition === null){
+			return $this->lands;
+		}else{
+			$ret = [];
+			foreach($this->lands as $land){
+				if($condition($land)){
+					$ret[$land->getId()] = $land;
+				}
+			}
+			return $ret;
+		}
+	}
+	
+	public function save(){
+		$chunkSize = 500; // WARNING : NEVER CHANGED!
+		
+		$serialize = [];
+		foreach($this->lands as $land){
+			$fileIndex = (int) $land->getId() / $chunkSize;
+			if(!isset($serialize[$fileIndex])){
+				$serialize[$fileIndex] = [];
+			}
+			$serialize[$fileIndex][$land->getid()] = $land->serialize();
+		}
+		
+		foreach($serialize as $key => $chunk){
+			$config = new Config($this->world->getProperties()->getLandPath() . "lands." . $key . ".yml", Config::YAML);
+			$config->setAll($chunk);
+			$config->save();
+		}
 	}
 }
