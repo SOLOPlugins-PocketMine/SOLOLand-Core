@@ -3,6 +3,7 @@
 namespace solo\sololand;
 
 use pocketmine\plugin\PluginBase;
+use pocketmine\plugin\PluginLoadOrder;
 use pocketmine\command\Command;
 use pocketmine\scheduler\PluginTask;
 
@@ -24,6 +25,8 @@ use solo\sololand\command\defaults\test\TestCommand;
 use solo\sololand\util\Setting;
 use solo\sololand\world\World;
 
+use solo\solocore\util\Debug;
+
 class Main extends PluginBase{
 
 	private static $instance = null;
@@ -41,6 +44,7 @@ class Main extends PluginBase{
 	}
 
 	public function onEnable(){
+		//$this->initialPatches();
 		$this->initialHandlers();
 		$this->initialWorlds();
 		$this->initialCommands();
@@ -70,6 +74,14 @@ class Main extends PluginBase{
 		//Generator.addGenerator(EmptyWorldGenerator.class, "emptyworld", EmptyWorldGenerator.TYPE_EMPTY_WORLD);
 		//Generator.addGenerator(SkyBlockGenerator.class, "skyblock", SkyBlockGenerator.TYPE_SKY_BLOCK);
 		//Generator.addGenerator(SkyGridGenerator.class, "skygrid", SkyGridGenerator.TYPE_SKY_GRID);
+	}
+	
+	private function initialPatches(){
+		$this->getServer()->getPluginManager()->registerInterface(PatchLoader::class);
+		$this->getServer()->getPluginManager()->registerInterface(FolderPatchLoader::class);
+		Debug::normal($this, "SOLOLand 패치 로더가 등록되었습니다.");
+		$this->getServer()->getPluginManager()->loadPlugins($this->getServer()->getPluginPath(), [PatchLoader::class, FolderPatchLoader::class]);
+		//$this->getServer()->enablePlugins(PluginLoadOrder::STARTUP);
 	}
 	
 	private function initialWorlds(){
