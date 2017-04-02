@@ -14,7 +14,7 @@ class BlockModifyHandler implements Listener{
 		$block = $event->getBlock();
 		
 		$world = World::getWorld($block);
-		$land = $world->getLandManager()->getLand($block);
+		$land = $world->getLandProvider()->getLand($block);
 		
 		if($land !== null){
 			if($player->hasPermission("sololand.administrate.land.modify")){

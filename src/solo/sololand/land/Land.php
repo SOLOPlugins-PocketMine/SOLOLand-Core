@@ -6,8 +6,9 @@ use pocketmine\Player;
 use pocketmine\command\CommandSender;
 use pocketmine\math\Vector3;
 use solo\sololand\math\Square;
+use solo\sololand\util\Serializable;
 
-class Land extends Square{
+class Land extends Square implements Serializable{
 
 	private $id;
 	public $owner = "";
@@ -257,5 +258,79 @@ class Land extends Square{
 		$this->allowPickUpItem = false;
 		
 		$this->clearRooms();
+	}
+	
+	
+	
+	public function serialize() : array{
+		$data = [];
+		if(get_class($this) !== Land::class){
+			$data["class"] = get_class($this);
+		}
+		if($this->owner !== ""){
+			$data["owner"] = $this->owner;
+		}
+		if(!empty($this->members)){
+			$data["members"] = $this->members;
+		}
+		$data["startX"] = $this->startX;
+		$data["startZ"] = $this->startZ;
+		$data["endX"] = $this->endX;
+		$data["endZ"] = $this->endZ;
+		if($this->price !== -1){
+			$data["price"] = $this->price;
+		}
+		$data["spawnPoint"] = $this->spawnPoint->x . ":" . $this->spawnPoint->y . ":" . $this->spawnPoint->z;
+		if($this->allowPVP){ // default value : false
+			$data["pvp"] = $this->allowPVP;
+		}
+		if(!$this->allowAccess){ // default value : true
+			$data["access"] = $this->allowAccess;
+		}
+		if($this->allowPickupItem){ // default value : false
+			$data["pickupItem"] = $this->allowPickupItem;
+		}
+		if($this->welcomeMessage !== ""){
+			$data["welcomeMessage"] = $this->welcomeMessage;
+		}
+		if($this->welcomeParticle !== 0){
+			$data["welcomeParticle"] = $this->welcomeParticle;
+		}
+		if(!empty($this->rooms)){
+			$data["rooms"] = [];
+			foreach($this->getRooms() as $room){
+				$data["rooms"][$room->getId()] = $room->serialize();
+			}
+		}
+		return $data;
+	}
+	
+	public function unserialize(array $data){
+		$this->owner = $data["owner"] ?? "";
+		$this->members = $data["members"] ?? [];
+		$this->startX = $data["startX"];
+		$this->startZ = $data["startZ"];
+		$this->endX = $data["endX"];
+		$this->endZ = $data["endZ"];
+		$this->price = $data["price"] ?? -1;
+		$v = explode(":", $data["spawnPoint"]);
+		$this->spawnPoint = new Vector3($v[0], $v[1], $v[2]);
+		$this->allowPVP = $data["pvp"] ?? false;
+		$this->allowAccess = $data["access"] ?? true;
+		$this->allowPickupItem = $data["pickupItem"] ?? false;
+		$this->welcomeMessage = $data["welcomeMessage"] ?? "";
+		$this->welcomeParticle = $data["welcomeParticle"] ?? 0;
+		foreach($data["rooms"] ?? [] as $roomId => $roomData){
+			$roomClass = Room::class;
+			if(isset($roomData["class"])){
+				$roomClass = $roomData["class"];
+				if(!class_exists($roomClass)){
+					$roomClass = Room::class;
+				}
+			}
+			$room = new $roomClass($roomId);
+			$room->unserialized($roomData);
+			$this->rooms[$roomId] = $room;
+		}
 	}
 }

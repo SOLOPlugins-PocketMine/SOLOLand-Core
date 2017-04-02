@@ -5,7 +5,7 @@ namespace solo\sololand\util;
 use pocketmine\Player;
 
 abstract class Queue{
-	
+
 	public static $list = [];
 	
 	public static function setQueue(Player $player, Queue $queue){

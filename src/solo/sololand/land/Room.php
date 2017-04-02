@@ -6,8 +6,9 @@ use pocketmine\Player;
 use pocketmine\command\CommandSender;
 use pocketmine\math\Vector3;
 use solo\sololand\math\Cuboid;
+use solo\sololand\util\Serializable;
 
-class Room extends Cuboid{
+class Room extends Cuboid implements Serializable{
 
 	public $id;
 	public $owner = "";
@@ -134,5 +135,46 @@ class Room extends Cuboid{
 	
 	public function getWelcomeMessage() : string{
 		return $this->welcomeMessage;
+	}
+	
+	public function serialize() : array{
+		$data = [];
+		if(get_class($this) !== Room::class){
+			$data["class"] = get_class($this);
+		}
+		if($this->owner !== ""){
+			$data["owner"] = $this->owner;
+		}
+		if(!empty($this->members)){
+			$data["members"] = $this->members;
+		}
+		$data["startX"] = $this->startX;
+		$data["startY"] = $this->startY;
+		$data["startZ"] = $this->startZ;
+		$data["endX"] = $this->endX;
+		$data["endY"] = $this->endY;
+		$data["endZ"] = $this->endZ;
+		if($this->price !== -1){
+			$data["price"] = $this->price;
+		}
+		$data["spawnPoint"] = $this->spawnPoint->x . ":" . $this->spawnPoint->y . ":" . $this->spawnPoint->z;
+		if($this->welcomeMessage !== ""){
+			$data["welcomeMessage"] = $this->welcomeMessage;
+		}
+		return $data;
+	}
+	
+	public function unserialize(array $data){
+		$this->members = $data["members"] ?? [];
+		$this->startX = $data["startX"];
+		$this->startY = $data["startY"];
+		$this->startZ = $data["startZ"];
+		$this->endX = $data["endX"];
+		$this->endY = $data["endY"];
+		$this->endZ = $data["endZ"];
+		$this->price = $data["price"] ?? -1;
+		$v = explode(":", $data["spawnPoint"]);
+		$this->spawnPoint = new Vector3($v[0], $v[1], $v[2]);
+		$this->welcomeMessage = $data["welcomeMessage"] ?? "";
 	}
 }

@@ -29,7 +29,7 @@ class PlayerInteractHandler implements Listener{
 		}
 		
 		$world = World::getWorld($player);
-		$land = $world->getLandManager()->getLand($player);
+		$land = $world->getLandProvider()->getLand($player);
 		$myMoney = Economy::getMoney($player);
 		
 		switch($queue->getType()){
@@ -43,7 +43,7 @@ class PlayerInteractHandler implements Listener{
 				$square = Square::create($queue->get("position"), $event->getBlock());
 				Message::normal($player, "두번째 지점을 선택하였습니다.");
 		
-				$overlapList = $world->getLandManager()->getLands(function(Land $land) use ($square){
+				$overlapList = $world->getLandProvider()->getLands(function(Land $land) use ($square){
 					return $square->isOverlap($land);
 				});
 				if(count($overlapList) > 0){
@@ -83,7 +83,7 @@ class PlayerInteractHandler implements Listener{
 		
 			case QueueType::LAND_EXPAND_FIRST:
 				$id = $queue->get("id");
-				$land = $world->getLandManager()->getLandById($id);
+				$land = $world->getLandProvider()->getLandById($id);
 				if($land->isInside($event->getBlock())){
 					Message::alert($player, "땅 바깥을 터치하여야 땅 확장이 가능합니다. 땅 확장을 취소합니다.");
 					Queue::removeQueue($player);
@@ -93,7 +93,7 @@ class PlayerInteractHandler implements Listener{
 				$squareExpanded->set($land);
 				$squareExpanded->expand($event->getBlock());
 		
-				$overlapList = $world->getLandManager()->getLands(function(Land $land) use ($square){
+				$overlapList = $world->getLandProvider()->getLands(function(Land $land) use ($square){
 					return $square->isOverlap($land);
 				});
 				if(count($overlapList) > 0){
@@ -134,7 +134,7 @@ class PlayerInteractHandler implements Listener{
 		
 			case QueueType::LAND_REDUCE_FIRST:
 				$id = $queue->get("id");
-				$land = $world->getLandManager()->getLandById($id);
+				$land = $world->getLandProvider()->getLandById($id);
 				if(!$land->isInside($event->getBlock())){
 					Message::alert($player, "땅 안쪽을 터치하여야 땅 축소가 가능합니다. 땅 축소를 취소합니다.");
 					Queu::removeQueue($player);
@@ -162,7 +162,7 @@ class PlayerInteractHandler implements Listener{
 		
 			case QueueType::ROOM_CREATE_FIRST:
 				$id = $queue->get("id");
-				$land = $world->getLandManager()->getLandById($id);
+				$land = $world->getLandProvider()->getLandById($id);
 				if(!$land->isInside($event->getBlock())){
 					Message::alert($player, "땅 안쪽을 터치해주세요.");
 					break;
@@ -174,7 +174,7 @@ class PlayerInteractHandler implements Listener{
 		
 			case QueueType::ROOM_CREATE_SECOND:
 				$id = $queue->get("id");
-				$land = $world->getLandManager()->getLandById($id);
+				$land = $world->getLandProvider()->getLandById($id);
 				if(!$land->isInside($event->getBlock())){
 					Message::normal($player, "땅 안쪽을 터치해주세요.");
 					break;

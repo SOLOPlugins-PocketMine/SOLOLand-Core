@@ -13,14 +13,14 @@ class EntityDamageHandler implements Listener{
 	public function handle(EntityDamageEvent $event){
 		if($event instanceof EntityDamageByEntityEvent && $event->getEntity() instanceof Player && $event->getDamager() instanceof Player){
 			$world = World::getWorld($event->getEntity());
-			$land = $world->getLandManager()->getLand($event->getEntity());
+			$land = $world->getLandProvider()->getLand($event->getEntity());
 			if($land !== null){
 				if(!$land->isAllowPVP()){
 					$event->setCancelled();
 				}
 				return;
 			}
-			if(!$world->isAllowPVP()){
+			if(!$world->getWorldProperties()->isAllowPVP()){
 				$event->setCancelled();
 			}
 		}

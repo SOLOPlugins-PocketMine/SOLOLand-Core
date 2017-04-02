@@ -28,7 +28,7 @@ class InventoryPickupItemHandler implements Listener{
 			return;
 		}
 		$world = World::getWorld($player);
-		$land = $world->getLandManager()->getLand($event->getItem());
+		$land = $world->getLandProvider()->getLand($event->getItem());
 		if($land === null){
 			return;
 		}

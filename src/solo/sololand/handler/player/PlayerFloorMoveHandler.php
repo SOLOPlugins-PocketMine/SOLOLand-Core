@@ -44,7 +44,7 @@ class PlayerFloorMoveHandler implements Listener{
 		$name = $player->getName();
 		$world = World::getWorld($player);
 		
-		$land = $world->getLandManager()->getLand($event->getTo());
+		$land = $world->getLandProvider()->getLand($event->getTo());
 		$previousLand = $this->previousLandList[$name] ?? null;
 	
 		//land process START
